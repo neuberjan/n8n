@@ -1,0 +1,399 @@
+{
+  "name": "Azure RAG Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "azure-chat-api",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7df4cedb-e9d1-4dc2-92b3-8e59f45f853d",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        26224,
+        27584
+      ],
+      "webhookId": "azure-chat-webhook"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "fedc8bcb-a0ac-4a7f-9efd-37dcee889fda",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        26224,
+        27808
+      ],
+      "webhookId": "0fe22d2d-2406-4bb4-a4f3-b35e738cb068",
+      "credentials": {
+        "telegramApi": {
+          "id": "27rH8k48qxNZfETw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body?.message || $json.message?.text }}",
+        "options": {
+          "systemMessage": "Du bist ein hilfreicher Assistent. Nutze die Wissensdatenbank, um Fragen zu beantworten. Antworte präzise und basierend auf den verfügbaren Informationen."
+        }
+      },
+      "id": "f6ef8a2b-7aa3-438c-8d18-7b09c604fc28",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        26656,
+        27696
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "options": {}
+      },
+      "id": "1d2807a0-4de4-4165-8fe7-ecf64ce5d6b6",
+      "name": "Azure OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        26560,
+        27872
+      ],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "9wonOU7YzuIo9uEL",
+          "name": "Azure Open AI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body?.sessionId || $json.message?.chat?.id }}",
+        "contextWindowLength": 10
+      },
+      "id": "ea8c29e7-7f10-4284-8ac0-a2378f03d398",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        26704,
+        27872
+      ]
+    },
+    {
+      "parameters": {
+        "name": "azure_knowledge_base",
+        "description": "Durchsuche die Azure Wissensdatenbank nach relevanten Informationen zu Benutzeranfragen."
+      },
+      "id": "1dddc546-951f-4958-84b1-23436e453e0e",
+      "name": "Vector Store Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        26720,
+        28032
+      ]
+    },
+    {
+      "parameters": {
+        "indexName": "knowledge-base-index",
+        "options": {}
+      },
+      "id": "e354a694-960b-4649-9e72-5cb5c99257c1",
+      "name": "Azure AI Search Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreAzureAISearch",
+      "typeVersion": 1,
+      "position": [
+        26640,
+        28192
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-ada-002",
+        "options": {}
+      },
+      "id": "5ec8629d-7886-45b4-8ebe-05d7076b1aef",
+      "name": "Azure OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        26640,
+        28336
+      ],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "9wonOU7YzuIo9uEL",
+          "name": "Azure Open AI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "condition-webhook",
+                    "leftValue": "={{ $('Webhook').item.json.body }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Webhook"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "id": "condition-telegram",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Telegram"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "id": "abe827bb-d662-4204-87c8-fc5535a9bb78",
+      "name": "Route Output",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        26896,
+        27696
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"response\": $json.output, \"sessionId\": $('Webhook').item.json.body?.sessionId } }}",
+        "options": {}
+      },
+      "id": "b8735231-2193-434f-ba55-a8c4bd006f29",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        27072,
+        27600
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "5547eb83-49b5-45f6-be77-550fe512d463",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        27072,
+        27824
+      ],
+      "webhookId": "08f53570-9cf3-4c47-b765-703136e2dfe1",
+      "credentials": {
+        "telegramApi": {
+          "id": "27rH8k48qxNZfETw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        26992,
+        28144
+      ],
+      "id": "8131382f-d497-4192-aeb1-6cad443be982",
+      "name": "Azure OpenAI Chat Model1",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "9wonOU7YzuIo9uEL",
+          "name": "Azure Open AI account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Route Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure AI Search Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Azure AI Search Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Output": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "27578e81-314a-4ef5-9c90-73bec6d5f97a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b269d7837a504b7223899908bc8cb43202782c02a3720e1fbd5b315ff631065e"
+  },
+  "id": "1nSMqO6whBJO7KWb",
+  "tags": []
+}

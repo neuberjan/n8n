@@ -12,3 +12,4 @@ __pycache__/
 
 # Logs
 *.log
+.azure-credentials.env

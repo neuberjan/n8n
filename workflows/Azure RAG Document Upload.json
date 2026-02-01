@@ -1,0 +1,191 @@
+{
+  "name": "Azure RAG Document Upload",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "/Volumes/FRITZ.NAS/Dokumente/RAG-Upload",
+        "events": ["add"],
+        "options": {
+          "ignoreInitialFiles": false
+        }
+      },
+      "id": "a1b2c3d4-1111-2222-3333-444455556666",
+      "name": "Watch Folder",
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.path }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-read-file-1234-567890abcdef",
+      "name": "Read File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "indexName": "knowledge-base-index",
+        "options": {}
+      },
+      "id": "a1b2c3d4-5555-6666-7777-888899990000",
+      "name": "Azure AI Search - Insert",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreAzureAISearch",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-ada-002",
+        "options": {}
+      },
+      "id": "a1b2c3d4-aaaa-bbbb-cccc-ddddeeeeffff",
+      "name": "Azure OpenAI Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        600,
+        500
+      ],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "9wonOU7YzuIo9uEL",
+          "name": "Azure Open AI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 1000,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "a1b2c3d4-1234-5678-9abc-def012345678",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        400,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "id": "a1b2c3d4-abcd-1234-ijkl-mnopqrstuvwx",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "filePath": "={{ $('Watch Folder').item.json.path }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-move-done-1234-567890abcdef",
+      "name": "Delete Processed File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Watch Folder": {
+      "main": [
+        [
+          {
+            "node": "Read File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read File": {
+      "main": [
+        [
+          {
+            "node": "Azure AI Search - Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Azure AI Search - Insert",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Azure AI Search - Insert",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure AI Search - Insert": {
+      "main": [
+        [
+          {
+            "node": "Delete Processed File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-01T10:00:00.000Z",
+  "versionId": "3"
+}
