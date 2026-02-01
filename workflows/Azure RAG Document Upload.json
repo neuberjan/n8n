@@ -3,34 +3,60 @@
   "nodes": [
     {
       "parameters": {
-        "path": "/Volumes/FRITZ.NAS/Dokumente/RAG-Upload",
-        "events": ["add"],
-        "options": {
-          "ignoreInitialFiles": false
-        }
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "event": "fileCreated",
+        "options": {}
       },
       "id": "a1b2c3d4-1111-2222-3333-444455556666",
-      "name": "Watch Folder",
-      "type": "n8n-nodes-base.localFileTrigger",
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
       "typeVersion": 1,
       "position": [
         200,
         300
-      ]
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": "Google Drive OAuth2"
+        }
+      }
     },
     {
       "parameters": {
-        "filePath": "={{ $json.path }}",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
         "options": {}
       },
       "id": "a1b2c3d4-read-file-1234-567890abcdef",
-      "name": "Read File",
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1,
+      "name": "Google Drive Download",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
         400,
         300
-      ]
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": "Google Drive OAuth2"
+        }
+      }
     },
     {
       "parameters": {
@@ -99,32 +125,42 @@
     {
       "parameters": {
         "operation": "delete",
-        "filePath": "={{ $('Watch Folder').item.json.path }}",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Google Drive Trigger').item.json.id }}"
+        },
         "options": {}
       },
       "id": "a1b2c3d4-move-done-1234-567890abcdef",
       "name": "Delete Processed File",
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
       "position": [
         1000,
         300
-      ]
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": "Google Drive OAuth2"
+        }
+      }
     }
   ],
   "connections": {
-    "Watch Folder": {
+    "Google Drive Trigger": {
       "main": [
         [
           {
-            "node": "Read File",
+            "node": "Google Drive Download",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Read File": {
+    "Google Drive Download": {
       "main": [
         [
           {
