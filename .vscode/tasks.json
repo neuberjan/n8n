@@ -1,0 +1,10 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run HTML Cleanup Test",
+			"type": "shell",
+			"command": "/Users/janneuber/Documents/Repos/n8n/.venv/bin/python /Users/janneuber/Documents/Repos/n8n/test_html_cleanup.py"
+		}
+	]
+}

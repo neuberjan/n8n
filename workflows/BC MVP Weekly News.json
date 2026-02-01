@@ -1,0 +1,1253 @@
+{
+  "name": "BC MVP Weekly News",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "test-mode-toggle",
+              "name": "testMode",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "952bf4c4-46b1-4fa0-9fac-4e8ac7d716f6",
+      "name": "⚙️ Test Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        20672,
+        25328
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "test-mode-condition",
+              "leftValue": "={{ $('⚙️ Test Config').item.json.testMode }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "257d7e83-5156-46fa-afbf-261c8ad86004",
+      "name": "Test Mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        20864,
+        25328
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-test-email",
+              "name": "EMail",
+              "value": "Jan.Neuber@googlemail.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0ab73e69-f0f2-40dd-bfb6-04e976c7e9c1",
+      "name": "Use Test Email",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        22240,
+        24528
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Summarize this Business Central article.\\n\\n## Article\\n- Title: ' + $json.title + '\\n- Author: ' + ($json.creator || $json['dc:creator'] || $json.sourceName || 'Unknown') + '\\n- Source: ' + ($json.sourceName || 'Unknown') + '\\n- URL: ' + $json.link + '\\n- Published: ' + ($json.pubDate || '').substring(0, 16) + '\\n- Tags: ' + (($json.categories || []).join(', ') || 'None') + '\\n- Type: ' + ($json.hasTranscript ? 'Video transcript' : 'Blog post') + '\\n\\n## Content:\\n' + ($json.data || '').substring(0, 10000) + '\\n\\n## Output JSON (no markdown):\\n{\\n  \"Title\": \"' + $json.title + '\",\\n  \"Link\": \"' + $json.link + '\",\\n  \"Summary\": \"<2-3 sentences: main technical insight for BC developers>\",\\n  \"Category\": \"<Development|Administration|Integration|Performance|Security|News|Other>\",\\n  \"Creator\": \"' + ($json.creator || $json['dc:creator'] || $json.sourceName || 'Unknown') + '\"\\n}' }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a Business Central technical writer. Summarize articles in 2-3 sentences focusing on the key technical insight. For video transcripts, extract the core message - ignore filler words. Return ONLY valid JSON with the exact structure shown. Use the provided Title, Link, and Creator values exactly as given."
+            }
+          ]
+        }
+      },
+      "id": "e8cb3dd5-366d-4b68-9d4e-0b4b73b6d6e6",
+      "name": "Page Summary Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        23360,
+        25600
+      ],
+      "retryOnFail": false,
+      "waitBetweenTries": 5000,
+      "maxTries": 2
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "maxTokens": 2000,
+          "temperature": 0.3
+        }
+      },
+      "id": "d3aa3759-106a-4b99-8e41-9148bf1f3cee",
+      "name": "Page Summary Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        23360,
+        25792
+      ],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "84IaBWpuNAHY7oEv",
+          "name": "Azure Open AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        22432,
+        25568
+      ],
+      "id": "1cd56b8f-f4b3-408b-a8c7-1a691f9e6d95",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.Feed }}",
+        "options": {}
+      },
+      "id": "bee4c094-9180-4439-a872-b61bc5549535",
+      "name": "Read RSS Feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        21552,
+        25696
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "a6cfb481-d356-4ab3-b1fc-e713e1f25b41",
+      "name": "Start",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        20480,
+        25328
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ Workflow Konfiguration\n\n**Test Mode (⚙️ Test Config):**\n- `testMode`: true = Test-Modus\n  → Nur an Jan.Neuber@googlemail.com\n  → Already Sent wird ignoriert\n- `testMode`: false = Produktiv\n  → An alle Empfänger\n  → Nur neue Feeds\n\n---\n⚡ Parallele Verarbeitung von Blob & Email.\n\n---\n📹 **YouTube Transkript (Supadata):**\nBei Video-Posts (z.B. hougaard.com) mit\nwenig Text (<500 Zeichen) wird automatisch\ndas YouTube-Transkript via Supadata API\ngeholt. Bei Fehler geht's ohne weiter.\n\n**Supadata Node installieren:**\nSettings → Community Nodes → Install\n→ n8n-nodes-supadata",
+        "height": 460,
+        "width": 480
+      },
+      "id": "01201fe4-8467-468b-b246-54bad9b87b22",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        20464,
+        24768
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        22912,
+        25600
+      ],
+      "id": "5e6f8fab-db2a-46cd-9bc6-59366cea6ec8",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.link }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "da8dfcf2-416c-4023-9bd8-b66f0307147b",
+      "name": "Fetch Page Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        22672,
+        25712
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Robustes HTML Content Cleanup V2 für Business Central Blogs\n// Optimiert für: waldo.be, demiliani.com, vjeko.com, yzhums.com, hougaard.com, kauffmann.nl, mynavblog.com, katson.com\n// V2: Bessere Extraktion für verschachtelte divs und Elementor-Seiten\n\nfunction cleanHtml(html) {\n  if (!html) return \"\";\n  \n  let content = null;\n  \n  // 1. CONTENT EXTRAKTION - Verbesserte Strategien\n  \n  // Strategie A: entry-content (WordPress) - OHNE schließendes div (wegen Verschachtelung)\n  const entryMatch = html.match(/<div[^>]*class=\"[^\"]*\\bentry-content\\b[^\"]*\"[^>]*>([\\s\\S]+)/i);\n  if (entryMatch) {\n    let inner = entryMatch[1];\n    // Finde natürliches Ende (footer, comments, etc.)\n    const endPatterns = [\n      /<footer\\b/i,\n      /<div[^>]*class=\"[^\"]*\\b(?:comments|comment-respond|related|share-buttons?|author-box|post-navigation|yarpp-related)\\b/i,\n      /<section[^>]*class=\"[^\"]*\\b(?:comments|related)\\b/i,\n      /<!--\\s*[.\\/]entry-content/i,\n      /<\\/article\\s*>/i,\n      /<div[^>]*id=\"comments\"/i\n    ];\n    let endPos = inner.length;\n    for (const pat of endPatterns) {\n      const m = inner.match(pat);\n      if (m && m.index < endPos && m.index > 500) endPos = m.index;\n    }\n    if (endPos > 500) content = inner.substring(0, endPos);\n  }\n  \n  // Strategie B: Elementor - Sammle ALLE widget-container mit Absatz-Content (ZUERST, da vollständiger)\n  if (!content || content.length < 500) {\n    const elementorBlocks = [];\n    const regex = /<div class=\"elementor-widget-container\">([\\s\\S]+?)<\\/div>\\s*<\\/div>/gi;\n    let match;\n    while ((match = regex.exec(html)) !== null) {\n      const block = match[1];\n      // Überspringe Comment-Formulare und Author-Boxen\n      if (block.includes('Leave a Reply') || block.includes('Cancel reply')) continue;\n      // Nur Blöcke mit echtem Textinhalt (<p> Tags und >15 Wörter)\n      if (block.includes('<p') || block.includes('<h')) {\n        const textOnly = block.replace(/<[^>]+>/g, ' ');\n        const words = textOnly.split(/\\s+/).filter(w => w.length > 2).length;\n        if (words > 15) elementorBlocks.push(block);\n      }\n    }\n    if (elementorBlocks.length >= 3) {\n      // Wenn 3+ Blöcke gefunden, ist dies wahrscheinlich Elementor-Content\n      content = elementorBlocks.join('\\n\\n');\n    }\n  }\n  \n  // Strategie B2: Elementor theme-post-content (Fallback für Video-Posts wie hougaard.com)\n  if (!content || content.length < 100) {\n    const themePostMatch = html.match(/data-widget_type=\"theme-post-content[^\"]*\"[^>]*>\\s*<div class=\"elementor-widget-container\">([\\s\\S]+?)<\\/div>\\s*<\\/div>/i);\n    if (themePostMatch && themePostMatch[1].length > 50) {\n      content = themePostMatch[1];\n    }\n  }\n  \n  // Strategie C: article Tag\n  if (!content || content.length < 500) {\n    const articleMatch = html.match(/<article[^>]*>([\\s\\S]+?)<\\/article>/i);\n    if (articleMatch && articleMatch[1].length > (content ? content.length : 0)) {\n      content = articleMatch[1];\n    }\n  }\n  \n  // Strategie D: post-content div (ähnlich wie entry-content)\n  if (!content || content.length < 500) {\n    const postMatch = html.match(/<div[^>]*class=\"[^\"]*\\bpost-content\\b[^\"]*\"[^>]*>([\\s\\S]+)/i);\n    if (postMatch) {\n      let inner = postMatch[1];\n      const endPatterns = [/<footer\\b/i, /<\\/article\\s*>/i, /<div[^>]*class=\"[^\"]*\\bcomments\\b/i];\n      let endPos = Math.min(inner.length, 50000);\n      for (const pat of endPatterns) {\n        const m = inner.match(pat);\n        if (m && m.index < endPos && m.index > 500) endPos = m.index;\n      }\n      if (endPos > (content ? content.length : 0)) content = inner.substring(0, endPos);\n    }\n  }\n  \n  // Strategie E: main Tag\n  if (!content || content.length < 500) {\n    const mainMatch = html.match(/<main[^>]*>([\\s\\S]+?)<\\/main>/i);\n    if (mainMatch && mainMatch[1].length > (content ? content.length : 0)) {\n      content = mainMatch[1];\n    }\n  }\n  \n  // Fallback: Body\n  if (!content || content.length < 300) {\n    const bodyMatch = html.match(/<body[^>]*>([\\s\\S]+?)<\\/body>/i);\n    content = bodyMatch ? bodyMatch[1] : html;\n  }\n  \n  // 2. NOISE ENTFERNUNG - Aggressive Bereinigung\n  const noisePatterns = [\n    // Scripts und Styles\n    /<script[^>]*>[\\s\\S]*?<\\/script>/gi,\n    /<style[^>]*>[\\s\\S]*?<\\/style>/gi,\n    /<noscript[^>]*>[\\s\\S]*?<\\/noscript>/gi,\n    // Strukturelle Elemente\n    /<nav[^>]*>[\\s\\S]*?<\\/nav>/gi,\n    /<footer[^>]*>[\\s\\S]*?<\\/footer>/gi,\n    /<header[^>]*>[\\s\\S]*?<\\/header>/gi,\n    /<aside[^>]*>[\\s\\S]*?<\\/aside>/gi,\n    // Embeds und Forms\n    /<iframe[^>]*>[\\s\\S]*?<\\/iframe>/gi,\n    /<form[^>]*>[\\s\\S]*?<\\/form>/gi,\n    /<svg[^>]*>[\\s\\S]*?<\\/svg>/gi,\n    // Kommentare\n    /<!--[\\s\\S]*?-->/gi,\n    // WordPress-spezifische Noise\n    /<div[^>]*class=\"[^\"]*\\b(?:sharedaddy|share-buttons|social-share|post-ratings|author-box|related-posts|comments-area|newsletter|cookie|popup|modal|sidebar|widget|advertisement|wp-block-embed|jetpack)\\b[^\"]*\"[^>]*>[\\s\\S]*?<\\/div>/gi,\n    // Interaktive Elemente\n    /<(?:button|input|select|textarea)[^>]*\\/?>(?:[\\s\\S]*?<\\/(?:button|select|textarea)>)?/gi,\n    // Bilder mit langen Data-URLs\n    /<img[^>]*src=\"data:[^\"]{100,}\"[^>]*>/gi,\n    // Rating/Vote Widgets\n    /<div[^>]*class=\"[^\"]*\\bpost-ratings\\b[^\"]*\"[^>]*>[\\s\\S]*?<\\/div>/gi\n  ];\n  \n  for (const pattern of noisePatterns) {\n    content = content.replace(pattern, ' ');\n  }\n  \n  // 3. CODE-BLÖCKE BEWAHREN\n  const codeBlocks = [];\n  content = content.replace(/<pre[^>]*>([\\s\\S]*?)<\\/pre>/gi, (match, code) => {\n    const cleanCode = code.replace(/<[^>]+>/g, '').trim();\n    if (cleanCode.length > 10) {\n      codeBlocks.push(cleanCode);\n      return `\\n\\n[CODE_BLOCK_${codeBlocks.length - 1}]\\n\\n`;\n    }\n    return '';\n  });\n  \n  // 4. STRUKTUR IN TEXT UMWANDELN\n  // Überschriften\n  content = content.replace(/<h1[^>]*>([\\s\\S]*?)<\\/h1>/gi, '\\n\\n# $1\\n');\n  content = content.replace(/<h2[^>]*>([\\s\\S]*?)<\\/h2>/gi, '\\n\\n## $1\\n');\n  content = content.replace(/<h3[^>]*>([\\s\\S]*?)<\\/h3>/gi, '\\n\\n### $1\\n');\n  content = content.replace(/<h[4-6][^>]*>([\\s\\S]*?)<\\/h[4-6]>/gi, '\\n\\n#### $1\\n');\n  // Paragraphen und Breaks\n  content = content.replace(/<\\/p>/gi, '\\n\\n');\n  content = content.replace(/<br\\s*\\/?>/gi, '\\n');\n  // Listen\n  content = content.replace(/<li[^>]*>/gi, '\\n• ');\n  content = content.replace(/<\\/li>/gi, '');\n  // Hervorhebungen (optional behalten)\n  content = content.replace(/<strong[^>]*>([\\s\\S]*?)<\\/strong>/gi, '**$1**');\n  content = content.replace(/<b>([\\s\\S]*?)<\\/b>/gi, '**$1**');\n  content = content.replace(/<em[^>]*>([\\s\\S]*?)<\\/em>/gi, '_$1_');\n  content = content.replace(/<code[^>]*>([\\s\\S]*?)<\\/code>/gi, '`$1`');\n  // Links - nur Text behalten\n  content = content.replace(/<a[^>]*>([\\s\\S]*?)<\\/a>/gi, '$1');\n  \n  // 5. ALLE ÜBRIGEN TAGS ENTFERNEN\n  content = content.replace(/<[^>]+>/g, ' ');\n  \n  // 6. HTML-ENTITIES DECODIEREN\n  const entities = {\n    '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '\"',\n    '&#39;': \"'\", '&apos;': \"'\", '&nbsp;': ' ',\n    '&mdash;': '—', '&ndash;': '–', '&hellip;': '…',\n    '&copy;': '©', '&reg;': '®', '&trade;': '™',\n    '&euro;': '€', '&pound;': '£', '&yen;': '¥',\n    '&laquo;': '«', '&raquo;': '»', '&bull;': '•'\n  };\n  for (const [entity, char] of Object.entries(entities)) {\n    content = content.replace(new RegExp(entity, 'gi'), char);\n  }\n  // Numerische Entities\n  content = content.replace(/&#(\\d+);/g, (m, n) => {\n    try { return String.fromCharCode(parseInt(n)); } catch(e) { return ''; }\n  });\n  content = content.replace(/&#x([0-9a-f]+);/gi, (m, n) => {\n    try { return String.fromCharCode(parseInt(n, 16)); } catch(e) { return ''; }\n  });\n  \n  // 7. CODE-BLÖCKE WIEDERHERSTELLEN\n  for (let i = 0; i < codeBlocks.length; i++) {\n    content = content.replace(`[CODE_BLOCK_${i}]`, `\\n\\`\\`\\`\\n${codeBlocks[i]}\\n\\`\\`\\`\\n`);\n  }\n  \n  // 8. WHITESPACE NORMALISIEREN\n  content = content.replace(/[ \\t]+/g, ' ');\n  content = content.replace(/\\n[ \\t]+/g, '\\n');\n  content = content.replace(/[ \\t]+\\n/g, '\\n');\n  content = content.replace(/\\n{3,}/g, '\\n\\n');\n  content = content.trim();\n  \n  // 9. INTELLIGENTES ABSCHNEIDEN bei 8000 Zeichen\n  const maxLen = 8000;\n  if (content.length > maxLen) {\n    content = content.substring(0, maxLen);\n    // Schneide am Satzende oder Absatz ab\n    const lastPeriod = content.lastIndexOf('. ');\n    const lastNewline = content.lastIndexOf('\\n\\n');\n    const cutPos = Math.max(lastPeriod, lastNewline);\n    if (cutPos > maxLen * 0.75) {\n      content = content.substring(0, cutPos + 1);\n    }\n  }\n  \n  return content;\n}\n\nconst input = $input.first();\nconst htmlContent = input.json.data || input.json.body || '';\nconst cleanContent = cleanHtml(htmlContent);\n\nreturn [{\n  json: {\n    ...input.json,\n    data: cleanContent\n  }\n}];"
+      },
+      "id": "adecdf5b-21f0-4f56-bbe5-f2dca3f40d60",
+      "name": "Clean HTML Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22832,
+        25712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Den Text aus dem Input holen\nlet rawText = $input.first().json.text;\n\n// 2. Die Markdown-Formatierung (```json und ```) entfernen\n// Wir suchen nach dem Inhalt zwischen den Backticks\nconst cleanJsonString = rawText.replace(/```json\\n?|```/g, '').trim();\n\ntry {\n  // 3. Den bereinigten String in ein echtes JSON-Objekt umwandeln\n  const parsedData = JSON.parse(cleanJsonString);\n\n  // 4. Das Ergebnis zurückgeben\n  return {\n    json: parsedData\n  };\n} catch (error) {\n  // Fehlerbehandlung, falls das LLM mal kein valides JSON liefert\n  return {\n    json: {\n      error: \"Parsing fehlgeschlagen\",\n      raw: cleanJsonString\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        23696,
+        25792
+      ],
+      "id": "7fc34e83-0708-4305-9669-91978de5057c",
+      "name": "Convert to Json"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        23392,
+        25296
+      ],
+      "id": "e539f142-42bf-4468-8d86-1d176b1b6d1f",
+      "name": "Merge",
+      "alwaysOutputData": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2-chat",
+        "options": {
+          "maxTokens": 4000,
+          "temperature": 1
+        }
+      },
+      "id": "69be4710-09e1-441c-85bd-16f0da99f1f9",
+      "name": "Weekly Summary Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        22944,
+        25168
+      ],
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "9wonOU7YzuIo9uEL",
+          "name": "Azure Open AI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a brief weekly intro (3-4 sentences max) for Business Central developers.\\n\\nHighlight the 2-3 most important topics from these articles. Be concise and focus on practical value.\\n\\nFormat: Plain HTML (only <p> tags for paragraphs, no <html>, <head>, <body>).\\n\\n## This Week's Articles:\\n{{ $json.data.map(item => '• ' + (item.Title || item.title) + ': ' + (item.Summary || item.summary || '')).join('\\n') }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a senior Business Central developer writing a quick weekly digest for your team. Keep it short, practical, and highlight what matters most. Write in English. Output plain HTML only (use <p> tags), no markdown."
+            }
+          ]
+        }
+      },
+      "id": "f966df13-92a9-4c8a-9dec-286f335697f6",
+      "name": "Weekly Summary Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        22848,
+        24960
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "45b4fa79-2398-453a-907f-15f5c81b6fbe",
+      "name": "Aggregate Summaries",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        22640,
+        25312
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {
+          "fileName": "={{ 'bcnews_' + $now.format('yyyy-MM-dd_HH-mm-ss') + '_KW' + $now.format('WW') + '.json' }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        23632,
+        25296
+      ],
+      "id": "901dd62f-5678-4c35-ad65-4b84c944d81f",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "resource": "blob",
+        "operation": "create",
+        "container": {
+          "__rl": true,
+          "value": "mcpria",
+          "mode": "list",
+          "cachedResultName": "mcpria"
+        },
+        "blobCreate": "={{ $binary.data.fileName }}",
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.azureStorage",
+      "typeVersion": 1,
+      "position": [
+        23808,
+        25296
+      ],
+      "id": "922e017e-bb14-4835-a5cd-a20532cdcd75",
+      "name": "Create blob",
+      "credentials": {
+        "azureStorageSharedKeyApi": {
+          "id": "E866VHvlIMdFJg2K",
+          "name": "Azure Storage account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.EMail }}",
+        "subject": "=BC News Weekly Summary - Calendar Week {{ $now.format('WW') }} {{ $now.format('yyyy') }}",
+        "message": "=<h1>Business Central News - Calendar Week {{ $now.format('WW') }}</h1>\n<p><strong>Date:</strong> {{ $now.format('MM/dd/yyyy') }}</p>\n<hr>\n<h2>Weekly Summary</h2>\n<p>{{ $('Weekly Summary Chain').item.json.text }}</p>\n<hr>\n<h2>Articles This Week</h2>\n{{ $('Aggregate Summaries').item.json.data.map(item => \n    '<div style=\"margin-bottom: 20px; padding: 10px; border-left: 3px solid #0078d4;\">' +\n    '<h3 style=\"margin-bottom: 5px;\">' + (item.Title || item.title) + '</h3>' +\n    '<p style=\"margin-bottom: 10px;\"><strong>By:</strong> ' + (item.Creator || item.creator || 'Editorial Team') + '</p>' +\n    '<p>' + (item.Summary || item.summary || '') + '</p>' +\n    '<a href=\"' + (item.Link || item.link) + '\">Read Article →</a>' +\n    '</div>'\n).join('') }}",
+        "options": {}
+      },
+      "id": "1eb87798-1225-4733-8cd0-d629ae0388a8",
+      "name": "Send Weekly Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        24256,
+        24784
+      ],
+      "webhookId": "9e13c843-7857-4438-9310-77cf84735ac9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7cu9d4lnJEQuPLrx",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": 2
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        22176,
+        25808
+      ],
+      "id": "9f6a822b-b082-4361-9ac4-cdd6beff6bce",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        21360,
+        25568
+      ],
+      "id": "28f432e1-a245-4dc8-833e-d2d9590c7949",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        23984,
+        24768
+      ],
+      "id": "7de4a749-eb7b-4c36-b238-f9a2efe184b4",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "FLXG9XTE9X8hbh1m",
+          "mode": "list",
+          "cachedResultName": "BCNewsMailAdresses",
+          "cachedResultUrl": "/projects/aE1YX2ZiBQXD4ij4/datatables/FLXG9XTE9X8hbh1m"
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        22240,
+        24672
+      ],
+      "id": "9c6abe71-08eb-40dd-9c6a-58bcc5cd31eb",
+      "name": "Mail Adresses"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "LenGAW1YH4NcT7Ml",
+          "mode": "list",
+          "cachedResultName": "RSSFeedsBC",
+          "cachedResultUrl": "/projects/aE1YX2ZiBQXD4ij4/datatables/LenGAW1YH4NcT7Ml"
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        21008,
+        25568
+      ],
+      "id": "214cb5cb-5692-4623-be70-5565b2aa2aef",
+      "name": "Feeds"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "YtknJ36NRVa9q7jO",
+          "mode": "list",
+          "cachedResultName": "BCNewsSend",
+          "cachedResultUrl": "/projects/aE1YX2ZiBQXD4ij4/datatables/YtknJ36NRVa9q7jO"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "EMail": "={{ $('Mail and Text').item.json.EMail }}",
+            "Text": "={{ $('Mail and Text').item.json.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "EMail",
+              "displayName": "EMail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Text",
+              "displayName": "Text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        24528,
+        24784
+      ],
+      "id": "5e869c4a-33f9-4bfb-a5ea-4a201381f369",
+      "name": "Log Sent Mails"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        23568,
+        24688
+      ],
+      "id": "47e386df-8b02-4a41-bb9c-253f6c7d4976",
+      "name": "Mail and Text"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "test-mode-feed-condition",
+              "leftValue": "={{ $('⚙️ Test Config').item.json.testMode }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c603074c-a28c-486e-a7ce-42509fcad476",
+      "name": "Skip Already Sent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        21744,
+        25744
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "gAwWQOSf1YcOgzoj",
+          "mode": "list",
+          "cachedResultName": "AlreadySent",
+          "cachedResultUrl": "/projects/aE1YX2ZiBQXD4ij4/datatables/gAwWQOSf1YcOgzoj"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "link",
+              "keyValue": "={{ $json.link }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        21904,
+        25648
+      ],
+      "id": "81ff453b-3a96-42d6-9cd0-ace061406819",
+      "name": "If row does not exist"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "gAwWQOSf1YcOgzoj",
+          "mode": "list",
+          "cachedResultName": "AlreadySent",
+          "cachedResultUrl": "/projects/aE1YX2ZiBQXD4ij4/datatables/gAwWQOSf1YcOgzoj"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "link": "={{ $json.link }}"
+          },
+          "matchingColumns": [
+            "Address"
+          ],
+          "schema": [
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        22048,
+        25648
+      ],
+      "id": "939389a0-ff79-476b-993d-6fbbc5a44356",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "chatId": "=7955006208",
+        "text": "=✅ *Weekly Blog Feed erfolgreich!*\n\n📅 Kalenderwoche: {{ $now.format('WW') }}/{{ $now.format('yyyy') }}\n\n📧 *E-Mails versendet an:*\n{{ $('Mail and Text').all().map(item => '• ' + item.json.EMail).join('\\n') }}\n\n📊 Anzahl Empfänger: {{ $('Mail and Text').all().length }}\n\n📝 *Weekly Summary:*\n{{ $('Weekly Summary Chain').item.json.text.replace(/<[^>]*>/g, '').replace(/\\s+/g, ' ').trim() }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "5bdcfbdb-ca07-415e-8fc3-16b08960478e",
+      "name": "📱 Telegram Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        24528,
+        24544
+      ],
+      "webhookId": "a3f65a56-c946-4c7a-ab88-3f4410956a8c",
+      "credentials": {
+        "telegramApi": {
+          "id": "27rH8k48qxNZfETw",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prüfe ob YouTube-Video vorhanden und wenig Content\n// Falls ja, extrahiere Video-ID für Transkript-Abruf\n\nconst input = $input.first();\nconst content = input.json.data || '';\nconst htmlContent = $('Fetch Page Content').item.json.data || '';\n\n// Suche nach YouTube-URLs in Content oder Original-HTML\nconst patterns = [\n  /(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/embed\\/)([a-zA-Z0-9_-]{11})/,\n  /youtube\\.com\\/watch\\?[^\"']*v=([a-zA-Z0-9_-]{11})/\n];\n\nlet videoId = null;\nfor (const pattern of patterns) {\n  const match = (content + htmlContent).match(pattern);\n  if (match) {\n    videoId = match[1];\n    break;\n  }\n}\n\n// Nur Transkript holen wenn: wenig Content (<500 Zeichen) UND YouTube-Video gefunden\nconst needsTranscript = content.length < 500 && videoId;\n\nreturn [{\n  json: {\n    ...input.json,\n    youtubeVideoId: videoId,\n    needsTranscript: needsTranscript\n  }\n}];"
+      },
+      "id": "69603fb8-5391-4142-9980-e484c248fd04",
+      "name": "Check YouTube Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22944,
+        25712
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "needs-transcript",
+              "leftValue": "={{ $json.needsTranscript }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3687d438-7657-4e8c-a848-ee9b8c7b0869",
+      "name": "Needs Transcript?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        23104,
+        25712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verarbeite Supadata Transcript-Response\nconst input = $input.first();\nconst originalData = $('Check YouTube Video').item.json;\n\nlet transcript = '';\n\ntry {\n  // Supadata gibt content als Array von {text, offset, duration} zurück\n  const content = input.json.content || [];\n  \n  if (Array.isArray(content)) {\n    transcript = content\n      .map(segment => segment.text || '')\n      .filter(t => t && t.trim())\n      .join(' ')\n      .replace(/\\s+/g, ' ')\n      .trim();\n  } else if (typeof content === 'string') {\n    transcript = content;\n  }\n} catch (e) {\n  transcript = '';\n}\n\n// Kombiniere Original-Content mit Transkript\nlet finalContent = originalData.data || '';\n\nif (transcript && transcript.length > 100) {\n  finalContent = finalContent + '\\n\\n---\\n\\n## 📹 Video Transcript\\n\\n' + transcript;\n}\n\nreturn [{\n  json: {\n    ...originalData,\n    data: finalContent,\n    hasTranscript: transcript.length > 100,\n    transcriptLength: transcript.length\n  }\n}];"
+      },
+      "id": "5d4bb5fa-d01f-464f-a1a1-365be5d7f31e",
+      "name": "Process Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        23744,
+        26080
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Kein Transcript verfügbar - Original-Daten zurückgeben\nconst input = $input.first();\n\nreturn [{\n  json: {\n    ...input.json,\n    hasTranscript: false\n  }\n}];"
+      },
+      "id": "ccabc65e-3efd-40e3-9fff-eb5a50b3a7f0",
+      "name": "No Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        23520,
+        26368
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getTranscript",
+        "videoUrl": "=https://www.youtube.com/watch?v={{ $('Check YouTube Video').item.json.youtubeVideoId }}"
+      },
+      "type": "n8n-nodes-supadata.supadata",
+      "typeVersion": 1,
+      "position": [
+        23344,
+        26096
+      ],
+      "id": "9eed3e8b-f564-46d4-b8be-8b7d4204ee4a",
+      "name": "Get transcript",
+      "credentials": {
+        "supadataApi": {
+          "id": "QTPk2ydhsYomQL8i",
+          "name": "Supadata account"
+        }
+      },
+      "continueOnFail": true,
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "⚙️ Test Config": {
+      "main": [
+        [
+          {
+            "node": "Test Mode?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Mode?": {
+      "main": [
+        [
+          {
+            "node": "Use Test Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail Adresses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Test Email": {
+      "main": [
+        [
+          {
+            "node": "Mail and Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page Summary Chain": {
+      "main": [
+        [
+          {
+            "node": "Convert to Json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page Summary Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Page Summary Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Test Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Summaries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Page Content",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Page Summary Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Json": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Summary Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Weekly Summary Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Summary Chain": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Summaries": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Weekly Summary Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mail and Text",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Create blob",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Weekly Email": {
+      "main": [
+        [
+          {
+            "node": "Log Sent Mails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read RSS Feed": {
+      "main": [
+        [
+          {
+            "node": "Skip Already Sent?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Already Sent?": {
+      "main": [
+        [
+          {
+            "node": "If row does not exist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read RSS Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [
+          {
+            "node": "📱 Telegram Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Weekly Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail Adresses": {
+      "main": [
+        [
+          {
+            "node": "Mail and Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feeds": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Sent Mails": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail and Text": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If row does not exist": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Page Content": {
+      "main": [
+        [
+          {
+            "node": "Clean HTML Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean HTML Content": {
+      "main": [
+        [
+          {
+            "node": "Check YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check YouTube Video": {
+      "main": [
+        [
+          {
+            "node": "Needs Transcript?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Transcript?": {
+      "main": [
+        [
+          {
+            "node": "Get transcript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Process Transcript": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "No Transcript": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get transcript": {
+      "main": [
+        [
+          {
+            "node": "Process Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "90898548-f120-48d2-bf0e-01e623285de4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b269d7837a504b7223899908bc8cb43202782c02a3720e1fbd5b315ff631065e"
+  },
+  "id": "f4W72pdbMf4ueprT",
+  "tags": [
+    {
+      "updatedAt": "2026-01-30T14:15:34.422Z",
+      "createdAt": "2026-01-30T14:15:34.422Z",
+      "id": "Dhqwt6tq7zUfL1OF",
+      "name": "Business Central"
+    },
+    {
+      "updatedAt": "2026-01-30T15:02:42.881Z",
+      "createdAt": "2026-01-30T15:02:42.881Z",
+      "id": "Ojv4wZNvNQOEHo46",
+      "name": "LangChain"
+    },
+    {
+      "updatedAt": "2026-01-30T14:15:34.439Z",
+      "createdAt": "2026-01-30T14:15:34.439Z",
+      "id": "egbtsdST5Syu9InY",
+      "name": "RSS Feed"
+    },
+    {
+      "updatedAt": "2026-01-30T14:15:34.449Z",
+      "createdAt": "2026-01-30T14:15:34.449Z",
+      "id": "h6NrgHHoFV7bsvLb",
+      "name": "Azure OpenAI"
+    }
+  ]
+}
